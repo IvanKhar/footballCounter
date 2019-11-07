@@ -1,1 +1,1 @@
-bot: bin/footballCounter
+web: bin/footballCounter
