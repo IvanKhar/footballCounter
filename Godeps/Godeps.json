@@ -1,0 +1,36 @@
+{
+	"ImportPath": "footballCounter",
+	"GoVersion": "go1.13",
+	"GodepVersion": "v80",
+	"Deps": [
+		{
+			"ImportPath": "github.com/Syfaro/telegram-bot-api",
+			"Comment": "v4.6.4-25-gb33efee",
+			"Rev": "b33efeebc78563cfeddf19563781cffb16aaabdf"
+		},
+		{
+			"ImportPath": "github.com/jinzhu/gorm",
+			"Comment": "v1.9.1-14-g409121d",
+			"Rev": "409121d9e394922787885b001d148a05e3a42b6c"
+		},
+		{
+			"ImportPath": "github.com/jinzhu/gorm/dialects/sqlite",
+			"Comment": "v1.9.1-14-g409121d",
+			"Rev": "409121d9e394922787885b001d148a05e3a42b6c"
+		},
+		{
+			"ImportPath": "github.com/jinzhu/inflection",
+			"Rev": "04140366298a54a039076d798123ffa108fff46c"
+		},
+		{
+			"ImportPath": "github.com/mattn/go-sqlite3",
+			"Comment": "v1.9.0-4-gb3511bf",
+			"Rev": "b3511bfdd742af558b54eb6160aca9446d762a19"
+		},
+		{
+			"ImportPath": "github.com/technoweenie/multipartstreamer",
+			"Comment": "v1.0.1",
+			"Rev": "a90a01d73ae432e2611d178c18367fbaa13e0154"
+		}
+	]
+}
