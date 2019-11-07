@@ -1,1 +1,1 @@
-web: footballCounter
+web: main
