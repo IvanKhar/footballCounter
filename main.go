@@ -3,8 +3,12 @@ package main
 import (
 	"fmt"
 	tgbotapi "github.com/Syfaro/telegram-bot-api"
+	"github.com/gin-gonic/gin"
 	"github.com/jinzhu/gorm"
 	_ "github.com/jinzhu/gorm/dialects/sqlite"
+	"github.com/julienschmidt/httprouter"
+	"log"
+	"os"
 	"reflect"
 	"strings"
 )
@@ -200,4 +204,19 @@ func main() {
 	//time.Sleep(1 * time.Minute)
 	//Вызываем бота
 	telegramBot()
+
+	port := os.Getenv("PORT")
+
+	if port == "" {
+		log.Fatal("$PORT must be set")
+	}
+
+	// gin router
+
+	router := gin.New()
+
+	err := router.Run(":" + port)
+	if err != nil {
+		log.Println(err)
+	}
 }

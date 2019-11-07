@@ -1,1 +1,1 @@
-worker: bin/footballCounter
+bot: bin/footballCounter
