@@ -4,6 +4,10 @@
 	"GodepVersion": "v80",
 	"Deps": [
 		{
+			"ImportPath": "github.com/gin-gonic/gin",
+			"Rev": "ac0ad2fed865d40a0adc1ac3ccaadc3acff5db4b"
+		},
+		{
 			"ImportPath": "github.com/Syfaro/telegram-bot-api",
 			"Comment": "v4.6.4-25-gb33efee",
 			"Rev": "b33efeebc78563cfeddf19563781cffb16aaabdf"
