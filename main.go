@@ -1,4 +1,4 @@
-package footballCounter
+package main
 
 import (
 	"fmt"
