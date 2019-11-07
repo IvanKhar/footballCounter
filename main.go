@@ -9,26 +9,27 @@ import (
 	"strings"
 )
 
-const dbDialect =  "sqlite3"
-const dbPath =  "football.db"
+const dbDialect = "sqlite3"
+const dbPath = "football.db"
 
 //var dbAll *gorm.DB
 
 type FootballList struct {
 	//gorm.Model
-	ID int `gorm:"primary_key"`
+	ID    int `gorm:"primary_key"`
 	Plus  string
 	Minus string
 	Maybe string
 }
-func openDb()(*gorm.DB, error) {
+
+func openDb() (*gorm.DB, error) {
 	db, err := gorm.Open(dbDialect, dbPath)
 	return db, err
 }
 
-func initialMigration()  {
+func initialMigration() {
 	db, err := openDb()
-	if err != nil{
+	if err != nil {
 		fmt.Println(err.Error())
 		panic("Fault occured while migrating")
 	}
@@ -39,7 +40,7 @@ func initialMigration()  {
 }
 
 func createNewList() error {
-	db,err := openDb()
+	db, err := openDb()
 	if err != nil {
 		return err
 	}
@@ -50,7 +51,7 @@ func createNewList() error {
 	return nil
 }
 
-func findLastList(db *gorm.DB, list *FootballList) (error){
+func findLastList(db *gorm.DB, list *FootballList) error {
 	db.Debug().Last(list)
 	fmt.Println(&list)
 	return nil
@@ -71,7 +72,7 @@ func deleteDuplicate(players string, name string) string {
 func addNewParticipant(name string, action string) error {
 	db, err := openDb()
 	var lastList FootballList
-	if findError := findLastList(db, &lastList); findError!=nil {
+	if findError := findLastList(db, &lastList); findError != nil {
 		return findError
 	}
 	if err != nil {
@@ -100,19 +101,20 @@ func addNewParticipant(name string, action string) error {
 }
 
 func showLastList() (*FootballList, error) {
-	db,err := openDb()
+	db, err := openDb()
 	if err != nil {
 		return nil, err
 	}
 	defer db.Close()
 	var list FootballList
-	if findErr := findLastList(db, &list); findErr!=nil {
+	if findErr := findLastList(db, &list); findErr != nil {
 		return nil, findErr
 	}
 	return &list, nil
 }
 
-const botToken  = "922019143:AAHgtoELxHIrYNZAv5HQOuz1tTjGQ-KI2jk"
+const botToken = "922019143:AAHgtoELxHIrYNZAv5HQOuz1tTjGQ-KI2jk"
+
 func telegramBot() {
 
 	//Создаем бота
@@ -147,7 +149,7 @@ func telegramBot() {
 
 				var message string
 				userName := fmt.Sprint(update.Message.From.FirstName, update.Message.From.LastName)
-				if strings.Contains(userName,"IvanKharkevich") {
+				if strings.Contains(userName, "IvanKharkevich") {
 					if err := createNewList(); err != nil {
 						message = "Что-то пошло не так и у меня не получилось создать новый список."
 					} else {
@@ -199,4 +201,3 @@ func main() {
 	//Вызываем бота
 	telegramBot()
 }
-
