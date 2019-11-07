@@ -1,1 +1,1 @@
-web: bin/footballCounter
+worker: bin/footballCounter
