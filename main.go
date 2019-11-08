@@ -61,12 +61,18 @@ func deleteDuplicate(players string, name string) string {
 	split := strings.Split(players, ",")
 
 	for i, existingName := range split {
-		if strings.Contains(strings.ToLower(existingName), strings.ToLower(name)) {
+		if strings.ToLower(existingName) == strings.ToLower(name) {
 			split = append(split[:i], split[i+1:]...)
+			break
 		}
-		break
 	}
 	return strings.Join(split, ",")
+}
+
+func addComma(s *string) {
+	if *s != "" {
+		*s += ","
+	}
 }
 
 func addNewParticipant(name string, action string) error {
@@ -86,11 +92,14 @@ func addNewParticipant(name string, action string) error {
 
 	switch action {
 	case "+":
-		lastList.Plus = lastList.Plus + name + ","
+		addComma(&lastList.Plus)
+		lastList.Plus += name
 	case "-":
-		lastList.Minus = lastList.Minus + name + ","
+		addComma(&lastList.Minus)
+		lastList.Minus += name
 	case "?":
-		lastList.Maybe = lastList.Maybe + name + ","
+		addComma(&lastList.Maybe)
+		lastList.Maybe += name
 	default:
 		return fmt.Errorf("Unknown command.")
 	}
