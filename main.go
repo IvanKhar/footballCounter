@@ -178,9 +178,9 @@ func telegramBot() {
 				} else {
 					message = fmt.Sprintf(
 						"Расклад на ближайшую игру:\n- точно идут %d человек: %s\n- возможно пойдут %d человек: %s\n- не идут %d человек: %s",
-						len(strings.Split(list.Plus, ",")), list.Plus,
-						len(strings.Split(list.Maybe, ",")), list.Maybe,
-						len(strings.Split(list.Minus, ",")) ,list.Minus)
+						getParticipantCount(&list.Plus), list.Plus,
+						getParticipantCount(&list.Maybe), list.Maybe,
+						getParticipantCount(&list.Minus) ,list.Minus)
 				}
 				msg := tgbotapi.NewMessage(update.Message.Chat.ID, message)
 				_, _ = bot.Send(msg)
@@ -204,6 +204,14 @@ func telegramBot() {
 			msg := tgbotapi.NewMessage(update.Message.Chat.ID, "Используйте кириллицу.")
 			_, _ = bot.Send(msg)
 		}
+	}
+}
+
+func getParticipantCount(s *string) int {
+	if *s == "" {
+		return 0
+	} else {
+		return len(strings.Split(*s, ","))
 	}
 }
 
