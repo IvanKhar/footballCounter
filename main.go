@@ -177,7 +177,10 @@ func telegramBot() {
 					message = "Что-то пошло не так =("
 				} else {
 					message = fmt.Sprintf(
-						"Расклад на ближайшую игру:\n- точно идут: %s\n- возможно пойдут: %s\n- не идут: %s", list.Plus, list.Maybe, list.Minus)
+						"Расклад на ближайшую игру:\n- точно идут %d человек: %s\n- возможно пойдут %d человек: %s\n- не идут %d человек: %s",
+						len(strings.Split(list.Plus, ",")), list.Plus,
+						len(strings.Split(list.Maybe, ",")), list.Maybe,
+						len(strings.Split(list.Minus, ",")) ,list.Minus)
 				}
 				msg := tgbotapi.NewMessage(update.Message.Chat.ID, message)
 				_, _ = bot.Send(msg)
