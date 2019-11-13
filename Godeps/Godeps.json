@@ -9,23 +9,23 @@
 			"Rev": "b33efeebc78563cfeddf19563781cffb16aaabdf"
 		},
 		{
+			"ImportPath": "github.com/go-sql-driver/mysql",
+			"Comment": "v1.4.0-41-gb57978c",
+			"Rev": "b57978c556ea168c02a3246eb044fd8b5afa5320"
+		},
+		{
 			"ImportPath": "github.com/jinzhu/gorm",
 			"Comment": "v1.9.1-14-g409121d",
 			"Rev": "409121d9e394922787885b001d148a05e3a42b6c"
 		},
 		{
-			"ImportPath": "github.com/jinzhu/gorm/dialects/sqlite",
+			"ImportPath": "github.com/jinzhu/gorm/dialects/mysql",
 			"Comment": "v1.9.1-14-g409121d",
 			"Rev": "409121d9e394922787885b001d148a05e3a42b6c"
 		},
 		{
 			"ImportPath": "github.com/jinzhu/inflection",
 			"Rev": "04140366298a54a039076d798123ffa108fff46c"
-		},
-		{
-			"ImportPath": "github.com/mattn/go-sqlite3",
-			"Comment": "v1.9.0-4-gb3511bf",
-			"Rev": "b3511bfdd742af558b54eb6160aca9446d762a19"
 		},
 		{
 			"ImportPath": "github.com/technoweenie/multipartstreamer",
