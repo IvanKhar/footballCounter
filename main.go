@@ -10,7 +10,7 @@ import (
 )
 
 const dbDialect = "mysql"
-const dbPath = "mysql://b641d7e50b5242:0708f315@us-cdbr-iron-east-05.cleardb.net/heroku_07b6f05f1995915?reconnect=true"
+const dbPath = "b641d7e50b5242:0708f315@(us-cdbr-iron-east-05.cleardb.net)/heroku_07b6f05f1995915"
 
 var chatIds  []string
 
