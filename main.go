@@ -9,13 +9,12 @@ import (
 	"strings"
 )
 
-const dbDialect = "sqlite3"
-const dbPath = "football.db"
+const dbDialect = "mysql"
+const dbPath = "mysql://b641d7e50b5242:0708f315@us-cdbr-iron-east-05.cleardb.net/heroku_07b6f05f1995915?reconnect=true"
 
-//var dbAll *gorm.DB
+var chatIds  []string
 
 type FootballList struct {
-	//gorm.Model
 	ID    int `gorm:"primary_key"`
 	Plus  string
 	Minus string
@@ -33,7 +32,6 @@ func initialMigration() {
 		fmt.Println(err.Error())
 		panic("Fault occured while migrating")
 	}
-	//dbAll = db
 	defer db.Close()
 	db.AutoMigrate(&FootballList{})
 	fmt.Println("Initial migration completed.")
@@ -180,7 +178,7 @@ func telegramBot() {
 						"Расклад на ближайшую игру:\n- точно идут %d человек: %s\n- возможно пойдут %d человек: %s\n- не идут %d человек: %s",
 						getParticipantCount(&list.Plus), list.Plus,
 						getParticipantCount(&list.Maybe), list.Maybe,
-						getParticipantCount(&list.Minus) ,list.Minus)
+						getParticipantCount(&list.Minus), list.Minus)
 				}
 				msg := tgbotapi.NewMessage(update.Message.Chat.ID, message)
 				_, _ = bot.Send(msg)
