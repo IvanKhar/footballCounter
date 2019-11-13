@@ -189,14 +189,14 @@ func telegramBot() {
 				_, _ = bot.Send(msg)
 
 			case "/info":
-				msg := tgbotapi.NewMessage(update.Message.Chat.ID, "Справочная информация: данный бот предназначен для упрощения записи на игру. \nЧтобы отметить, что Вы хотите пойти на игру, отправьте в чат \"+\". \nЕсли Вы еще не уверены, сможете или нет, то отправьте \"?\". \nЕсли точно не получится придти на ближайшую игру, то отправьте \"-\".")
+				msg := tgbotapi.NewMessage(update.Message.Chat.ID, "Справочная информация: данный бот предназначен для упрощения записи на игру. \nЧтобы отметить, что Вы хотите пойти на игру, отправьте в чат \"+\". \nЕсли точно не получится придти на ближайшую игру, то отправьте \"-\". \nЕсли Вы травмированы, то отправьте \"!\".")
 				_, _ = bot.Send(msg)
 
 			default:
 				var message string
 
 				if err := addNewParticipant(fmt.Sprintf("%s %s", string(update.Message.From.LastName), string(update.Message.From.FirstName)), string(update.Message.Text)); err != nil {
-					message = "Для записи используйте \"+\",\"-\" или \"?\""
+					message = "Для записи используйте \"+\",\"-\" или \"!\""
 				} else {
 					message = "Добавил"
 				}
