@@ -12,13 +12,13 @@ import (
 const dbDialect = "mysql"
 const dbPath = "b641d7e50b5242:0708f315@(us-cdbr-iron-east-05.cleardb.net)/heroku_07b6f05f1995915"
 
-var chatIds  []string
+var chatIds []string
 
 type FootballList struct {
-	ID    int `gorm:"primary_key"`
-	Plus  string
-	Minus string
-	Maybe string
+	ID      int `gorm:"primary_key"`
+	Plus    string
+	Minus   string
+	Injured string
 }
 
 func openDb() (*gorm.DB, error) {
@@ -44,7 +44,12 @@ func createNewList() error {
 	}
 	defer db.Close()
 
-	db.Debug().Create(&FootballList{})
+	lastList := &FootballList{}
+	if errToFind := findLastList(db, lastList); errToFind != nil {
+		return errToFind
+	}
+
+	db.Debug().Create(&FootballList{Injured: lastList.Injured})
 
 	return nil
 }
@@ -86,7 +91,7 @@ func addNewParticipant(name string, action string) error {
 
 	lastList.Plus = deleteDuplicate(lastList.Plus, name)
 	lastList.Minus = deleteDuplicate(lastList.Minus, name)
-	lastList.Maybe = deleteDuplicate(lastList.Maybe, name)
+	lastList.Injured = deleteDuplicate(lastList.Injured, name)
 
 	switch action {
 	case "+":
@@ -95,9 +100,9 @@ func addNewParticipant(name string, action string) error {
 	case "-":
 		addComma(&lastList.Minus)
 		lastList.Minus += name
-	case "?":
-		addComma(&lastList.Maybe)
-		lastList.Maybe += name
+	case "!":
+		addComma(&lastList.Injured)
+		lastList.Injured += name
 	default:
 		return fmt.Errorf("Unknown command.")
 	}
@@ -129,6 +134,7 @@ func telegramBot() {
 	if err != nil {
 		panic(err)
 	}
+
 	fmt.Println("Connected to telegram.")
 	//Устанавливаем время обновления
 	u := tgbotapi.NewUpdate(0)
@@ -147,13 +153,11 @@ func telegramBot() {
 
 			switch update.Message.Text {
 			case "/start":
-
 				//Отправлем сообщение
 				msg := tgbotapi.NewMessage(update.Message.Chat.ID, "Hi, i'm a football counter bot, i can create a list of players for the next game.")
 				_, _ = bot.Send(msg)
 
 			case "/new_list":
-
 				var message string
 				userName := fmt.Sprint(update.Message.From.FirstName, update.Message.From.LastName)
 				if strings.Contains(userName, "IvanKharkevich") {
@@ -168,6 +172,7 @@ func telegramBot() {
 				}
 				msg := tgbotapi.NewMessage(update.Message.Chat.ID, message)
 				_, _ = bot.Send(msg)
+
 			case "/list":
 				list, err := showLastList()
 				var message string
@@ -175,16 +180,18 @@ func telegramBot() {
 					message = "Что-то пошло не так =("
 				} else {
 					message = fmt.Sprintf(
-						"Расклад на ближайшую игру:\n- точно идут %d человек: %s\n- возможно пойдут %d человек: %s\n- не идут %d человек: %s",
+						"Расклад на ближайшую игру:\n- точно идут %d человек: %s\n- не идут %d человек: %s\n- травмированы %d человек: %s",
 						getParticipantCount(&list.Plus), list.Plus,
-						getParticipantCount(&list.Maybe), list.Maybe,
-						getParticipantCount(&list.Minus), list.Minus)
+						getParticipantCount(&list.Minus), list.Minus,
+						getParticipantCount(&list.Injured), list.Injured)
 				}
 				msg := tgbotapi.NewMessage(update.Message.Chat.ID, message)
 				_, _ = bot.Send(msg)
+
 			case "/info":
 				msg := tgbotapi.NewMessage(update.Message.Chat.ID, "Справочная информация: данный бот предназначен для упрощения записи на игру. \nЧтобы отметить, что Вы хотите пойти на игру, отправьте в чат \"+\". \nЕсли Вы еще не уверены, сможете или нет, то отправьте \"?\". \nЕсли точно не получится придти на ближайшую игру, то отправьте \"-\".")
 				_, _ = bot.Send(msg)
+
 			default:
 				var message string
 
