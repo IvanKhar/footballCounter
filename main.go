@@ -2,127 +2,22 @@ package main
 
 import (
 	"fmt"
+	"footballCounter/repository"
 	tgbotapi "github.com/Syfaro/telegram-bot-api"
-	"github.com/jinzhu/gorm"
 	_ "github.com/jinzhu/gorm/dialects/mysql"
 	"reflect"
 	"strings"
 )
 
-const dbDialect = "mysql"
-const dbPath = "b641d7e50b5242:0708f315@(us-cdbr-iron-east-05.cleardb.net)/heroku_07b6f05f1995915"
+const greetingMsgText = "Пожалуйста, выберете, что бы Вы хотели сделать:"
+const greetingMsgTextPost = "%s\n\nПожалуйста, выберете, что бы Вы хотели сделать:"
+const infoMsgText  = "Справочная информация: данный бот предназначен для упрощения записи на игру. \nЧтобы отметить, что Вы хотите пойти на игру, отправьте в чат \"+\". \nЕсли точно не получится придти на ближайшую игру, то отправьте \"-\". \nЕсли Вы травмированы, то отправьте \"!\"." 
 
-var chatIds []string
 
-type FootballList struct {
-	ID      int `gorm:"primary_key"`
-	Plus    string
-	Minus   string
-	Injured string
-}
-
-func openDb() (*gorm.DB, error) {
-	db, err := gorm.Open(dbDialect, dbPath)
-	return db, err
-}
-
-func initialMigration() {
-	db, err := openDb()
-	if err != nil {
-		fmt.Println(err.Error())
-		panic("Fault occured while migrating")
-	}
-	defer db.Close()
-	db.AutoMigrate(&FootballList{})
-	fmt.Println("Initial migration completed.")
-}
-
-func createNewList() error {
-	db, err := openDb()
-	if err != nil {
-		return err
-	}
-	defer db.Close()
-
-	lastList := &FootballList{}
-	if errToFind := findLastList(db, lastList); errToFind != nil {
-		return errToFind
-	}
-
-	db.Debug().Create(&FootballList{Injured: lastList.Injured})
-
-	return nil
-}
-
-func findLastList(db *gorm.DB, list *FootballList) error {
-	db.Debug().Last(list)
-	fmt.Println(&list)
-	return nil
-}
-
-func deleteDuplicate(players string, name string) string {
-	split := strings.Split(players, ",")
-
-	for i, existingName := range split {
-		if strings.ToLower(existingName) == strings.ToLower(name) {
-			split = append(split[:i], split[i+1:]...)
-			break
-		}
-	}
-	return strings.Join(split, ",")
-}
-
-func addComma(s *string) {
-	if *s != "" {
-		*s += ","
-	}
-}
-
-func addNewParticipant(name string, action string) error {
-	db, err := openDb()
-	var lastList FootballList
-	if findError := findLastList(db, &lastList); findError != nil {
-		return findError
-	}
-	if err != nil {
-		return err
-	}
-	defer db.Close()
-
-	lastList.Plus = deleteDuplicate(lastList.Plus, name)
-	lastList.Minus = deleteDuplicate(lastList.Minus, name)
-	lastList.Injured = deleteDuplicate(lastList.Injured, name)
-
-	switch action {
-	case "+":
-		addComma(&lastList.Plus)
-		lastList.Plus += name
-	case "-":
-		addComma(&lastList.Minus)
-		lastList.Minus += name
-	case "!":
-		addComma(&lastList.Injured)
-		lastList.Injured += name
-	default:
-		return fmt.Errorf("Unknown command.")
-	}
-
-	db.Debug().Save(&lastList)
-
-	return nil
-}
-
-func showLastList() (*FootballList, error) {
-	db, err := openDb()
-	if err != nil {
-		return nil, err
-	}
-	defer db.Close()
-	var list FootballList
-	if findErr := findLastList(db, &list); findErr != nil {
-		return nil, findErr
-	}
-	return &list, nil
+func main() {
+	repository.InitialMigration()
+	//Вызываем бота
+	telegramBot()
 }
 
 const botToken = "922019143:AAHgtoELxHIrYNZAv5HQOuz1tTjGQ-KI2jk"
@@ -137,79 +32,142 @@ func telegramBot() {
 
 	fmt.Println("Connected to telegram.")
 	//Устанавливаем время обновления
-	u := tgbotapi.NewUpdate(0)
-	u.Timeout = 60
+	updateConfig := tgbotapi.NewUpdate(0)
+	updateConfig.Timeout = 60
+
+	processRequests(bot, updateConfig)
+}
+
+func processRequests(bot *tgbotapi.BotAPI, updateConfig tgbotapi.UpdateConfig) {
 
 	//Получаем обновления от бота
-	updates, err := bot.GetUpdatesChan(u)
+	updatesChannel, err := bot.GetUpdatesChan(updateConfig)
+	if err != nil {
+		panic(err)
+	}
 
-	for update := range updates {
-		if update.Message == nil {
+	for update := range updatesChannel {
+		//if update.Message == nil {
+		//	continue
+		//}
+
+		var msg tgbotapi.MessageConfig;
+
+		if update.CallbackQuery != nil {
+
+			switch update.CallbackQuery.Data {
+			case "manage":
+				msg = getManageKeyBoard(update.CallbackQuery.Message.Chat.ID)
+			case "list":
+				msg = getStartMessageWithKeyBoard(update.CallbackQuery.Message.Chat.ID, processShowListRequest())
+			case "participate":
+				msg = getParticipateKeyboard(update.CallbackQuery.Message.Chat.ID)
+			case "newList":
+				if err := processNewListRequest(update.CallbackQuery); err != nil {
+					msg = getStartMessageWithKeyBoard(update.CallbackQuery.Message.Chat.ID, err.Error())
+				} else {
+					msg = getStartMessageWithKeyBoard(update.CallbackQuery.Message.Chat.ID, "Создал")
+				}
+			default:
+				if err := processAddParticipantRequest(&update); err != nil {
+					msg = getStartMessageWithKeyBoard(update.CallbackQuery.Message.Chat.ID, err.Error())
+				} else {
+					msg = getStartMessageWithKeyBoard(update.CallbackQuery.Message.Chat.ID, "Записал ;)")
+				}
+			}
+
+			bot.Send(msg)
 			continue
 		}
 
 		//Проверяем что от пользователья пришло именно текстовое сообщение
-		if reflect.TypeOf(update.Message.Text).Kind() == reflect.String && update.Message.Text != "" {
-
-			switch update.Message.Text {
-			case "/start":
-				//Отправлем сообщение
-				msg := tgbotapi.NewMessage(update.Message.Chat.ID, "Hi, i'm a football counter bot, i can create a list of players for the next game.")
-				_, _ = bot.Send(msg)
-
-			case "/new_list":
-				var message string
-				userName := fmt.Sprint(update.Message.From.FirstName, update.Message.From.LastName)
-				if strings.Contains(userName, "IvanKharkevich") {
-					if err := createNewList(); err != nil {
-						message = "Что-то пошло не так и у меня не получилось создать новый список."
-					} else {
-						message = fmt.Sprintf("%s создал новый список", userName)
-						fmt.Println(message)
-					}
-				} else {
-					message = "У вас нет прав на создание нового списка."
-				}
-				msg := tgbotapi.NewMessage(update.Message.Chat.ID, message)
-				_, _ = bot.Send(msg)
-
-			case "/list":
-				list, err := showLastList()
-				var message string
-				if err != nil {
-					message = "Что-то пошло не так =("
-				} else {
-					message = fmt.Sprintf(
-						"Расклад на ближайшую игру:\n- точно идут %d человек: %s\n- не идут %d человек: %s\n- травмированы %d человек: %s",
-						getParticipantCount(&list.Plus), list.Plus,
-						getParticipantCount(&list.Minus), list.Minus,
-						getParticipantCount(&list.Injured), list.Injured)
-				}
-				msg := tgbotapi.NewMessage(update.Message.Chat.ID, message)
-				_, _ = bot.Send(msg)
-
-			case "/info":
-				msg := tgbotapi.NewMessage(update.Message.Chat.ID, "Справочная информация: данный бот предназначен для упрощения записи на игру. \nЧтобы отметить, что Вы хотите пойти на игру, отправьте в чат \"+\". \nЕсли точно не получится придти на ближайшую игру, то отправьте \"-\". \nЕсли Вы травмированы, то отправьте \"!\".")
-				_, _ = bot.Send(msg)
-
-			default:
-				var message string
-
-				if err := addNewParticipant(fmt.Sprintf("%s %s", string(update.Message.From.LastName), string(update.Message.From.FirstName)), string(update.Message.Text)); err != nil {
-					message = "Для записи используйте \"+\",\"-\" или \"!\""
-				} else {
-					message = "Добавил"
-				}
-				msg := tgbotapi.NewMessage(update.Message.Chat.ID, message)
-				_, _ = bot.Send(msg)
-			}
+		if reflect.TypeOf(update.Message.Text).Kind() == reflect.String && update.Message.Text != ""  {
+			msg = getStartMessageWithKeyBoard(update.Message.Chat.ID, "Привет!")
 		} else {
-
-			//Отправлем сообщение
-			msg := tgbotapi.NewMessage(update.Message.Chat.ID, "Используйте кириллицу.")
-			_, _ = bot.Send(msg)
+			msg = tgbotapi.NewMessage(update.Message.Chat.ID, "Пока умею принимать только текстовые сообщения.")
 		}
+		_, _ = bot.Send(msg)
 	}
+}
+
+func getManageKeyBoard(chatId int64) tgbotapi.MessageConfig {
+	newListButton := tgbotapi.NewInlineKeyboardButtonData("Создать новый список", "newList")
+	//editListButton := tgbotapi.NewInlineKeyboardButtonData("Редактироовать существующий", "editList")
+	keyboardRow := tgbotapi.NewInlineKeyboardRow(newListButton)
+
+	msg := tgbotapi.NewMessage(chatId, fmt.Sprintf(greetingMsgText))
+	msg.ReplyMarkup = tgbotapi.NewInlineKeyboardMarkup(keyboardRow)
+	return msg
+}
+
+func getStartMessageWithKeyBoard(chatId int64, responseText string) tgbotapi.MessageConfig {
+
+	partButton := tgbotapi.NewInlineKeyboardButtonData("Записаться", "participate")
+	listButton := tgbotapi.NewInlineKeyboardButtonData("Узнать расклад", "list")
+	keyboardRow1 := tgbotapi.NewInlineKeyboardRow(partButton, listButton)
+	manageButton := tgbotapi.NewInlineKeyboardButtonData("Управлять списками", "manage")
+	keyboardRow2 := tgbotapi.NewInlineKeyboardRow(manageButton)
+
+	msg := tgbotapi.NewMessage(chatId, fmt.Sprintf(greetingMsgTextPost, responseText))
+	msg.ReplyMarkup = tgbotapi.NewInlineKeyboardMarkup(keyboardRow1, keyboardRow2)
+	return msg
+}
+
+func getParticipateKeyboard(chatId int64) tgbotapi.MessageConfig {
+	plus := tgbotapi.NewInlineKeyboardButtonData("Приду", "+")
+	minus := tgbotapi.NewInlineKeyboardButtonData("Не приду", "-")
+	injured := tgbotapi.NewInlineKeyboardButtonData("Травмирован", "!")
+	keyboardRow := tgbotapi.NewInlineKeyboardRow(plus, minus, injured)
+
+	msg := tgbotapi.NewMessage(chatId, "Укажите, сможете ли вы участвовать")
+	msg.ReplyMarkup = tgbotapi.NewInlineKeyboardMarkup(keyboardRow)
+	return msg
+}
+
+const errorOccurredText = "Возникла ошибка: %s"
+
+func processNewListRequest(request *tgbotapi.CallbackQuery) error {
+
+	userName := fmt.Sprint(request.From.FirstName, request.From.LastName)
+	if strings.Contains(userName, "IvanKharkevich") {
+		if err := repository.CreateNewList(); err != nil {
+			return err
+		}
+	} else {
+		return fmt.Errorf("У вас нет прав на создание нового списка")
+	}
+	return nil
+}
+
+func processShowListRequest() string {
+
+	var message string
+	if list, err := repository.FindLastList(); err != nil {
+		message = fmt.Sprintf(errorOccurredText, err.Error())
+	} else {
+		message = fmt.Sprintf(
+			"Расклад на ближайшую игру:\n- точно идут %d человек: %s\n- не идут %d человек: %s\n- травмированы %d человек: %s",
+			getParticipantCount(&list.Plus), list.Plus,
+			getParticipantCount(&list.Minus), list.Minus,
+			getParticipantCount(&list.Injured), list.Injured)
+	}
+	return message
+}
+
+func createMsgWithKeyboard(chatId int64, text string, keyboard tgbotapi.InlineKeyboardMarkup) tgbotapi.MessageConfig {
+	msg := tgbotapi.NewMessage(chatId, text)
+	msg.ReplyMarkup = keyboard
+	return msg
+}
+
+func processAddParticipantRequest(request *tgbotapi.Update) error {
+
+	userFullName := fmt.Sprintf("%s %s", string(request.CallbackQuery.From.LastName), string(request.CallbackQuery.From.FirstName))
+	fmt.Println("Имя пользователя", userFullName, "action:", request.CallbackQuery.Data)
+	if err := repository.AddNewParticipant(userFullName, string(request.CallbackQuery.Data)); err != nil {
+		return err
+	}
+	return nil
 }
 
 func getParticipantCount(s *string) int {
@@ -218,11 +176,4 @@ func getParticipantCount(s *string) int {
 	} else {
 		return len(strings.Split(*s, ","))
 	}
-}
-
-func main() {
-	initialMigration()
-	//time.Sleep(1 * time.Minute)
-	//Вызываем бота
-	telegramBot()
 }
