@@ -24,6 +24,7 @@ var botToken = os.Getenv("TBOT_TOKEN")
 
 func telegramBot() {
 
+	fmt.Println("BOT token ", botToken)
 	//Creating bot
 	bot, err := tgbotapi.NewBotAPI(botToken)
 	if err != nil {

@@ -82,6 +82,7 @@ func findLastListWithDb(db *gorm.DB, list *GameParticipants) error {
 // public methods
 
 func InitialMigration() {
+	fmt.Println("DB Address",dbPath)
 	db, err := openDb()
 	if err != nil {
 		fmt.Println(err.Error())
