@@ -11,8 +11,7 @@ import (
 
 const greetingMsgText = "Пожалуйста, выберете, что бы Вы хотели сделать:"
 const greetingMsgTextPost = "%s\n\nПожалуйста, выберете, что бы Вы хотели сделать:"
-const infoMsgText  = "Справочная информация: данный бот предназначен для упрощения записи на игру. \nЧтобы отметить, что Вы хотите пойти на игру, отправьте в чат \"+\". \nЕсли точно не получится придти на ближайшую игру, то отправьте \"-\". \nЕсли Вы травмированы, то отправьте \"!\"." 
-
+const infoMsgText = "Справочная информация: данный бот предназначен для упрощения записи на игру. \nЧтобы отметить, что Вы хотите пойти на игру, отправьте в чат \"+\". \nЕсли точно не получится придти на ближайшую игру, то отправьте \"-\". \nЕсли Вы травмированы, то отправьте \"!\"."
 
 func main() {
 	repository.InitialMigration()
@@ -47,50 +46,51 @@ func processRequests(bot *tgbotapi.BotAPI, updateConfig tgbotapi.UpdateConfig) {
 	}
 
 	for update := range updatesChannel {
-		//if update.Message == nil {
-		//	continue
-		//}
 
-		var msg tgbotapi.MessageConfig;
+		var msg tgbotapi.MessageConfig
 
 		if update.CallbackQuery != nil {
-
-			switch update.CallbackQuery.Data {
-			case "manage":
-				msg = getManageKeyBoard(update.CallbackQuery.Message.Chat.ID)
-			case "list":
-				msg = getStartMessageWithKeyBoard(update.CallbackQuery.Message.Chat.ID, processShowListRequest())
-			case "participate":
-				msg = getParticipateKeyboard(update.CallbackQuery.Message.Chat.ID)
-			case "newList":
-				if err := processNewListRequest(update.CallbackQuery); err != nil {
-					msg = getStartMessageWithKeyBoard(update.CallbackQuery.Message.Chat.ID, err.Error())
-				} else {
-					msg = getStartMessageWithKeyBoard(update.CallbackQuery.Message.Chat.ID, "Создал")
-				}
-			default:
-				if err := processAddParticipantRequest(&update); err != nil {
-					msg = getStartMessageWithKeyBoard(update.CallbackQuery.Message.Chat.ID, err.Error())
-				} else {
-					msg = getStartMessageWithKeyBoard(update.CallbackQuery.Message.Chat.ID, "Записал ;)")
-				}
-			}
-
+			msg = processCallBackQuery(update)
 			bot.Send(msg)
 			continue
 		}
 
 		//Проверяем что от пользователья пришло именно текстовое сообщение
-		if reflect.TypeOf(update.Message.Text).Kind() == reflect.String && update.Message.Text != ""  {
+		if reflect.TypeOf(update.Message.Text).Kind() == reflect.String && update.Message.Text != "" {
 			msg = getStartMessageWithKeyBoard(update.Message.Chat.ID, "Привет!")
 		} else {
 			msg = tgbotapi.NewMessage(update.Message.Chat.ID, "Пока умею принимать только текстовые сообщения.")
 		}
-		_, _ = bot.Send(msg)
+		bot.Send(msg)
+	}
+}
+
+func processCallBackQuery(request tgbotapi.Update) tgbotapi.MessageConfig {
+
+	switch request.CallbackQuery.Data {
+	case "manage":
+		return getManageKeyBoard(request.CallbackQuery.Message.Chat.ID)
+	case "list":
+		return getStartMessageWithKeyBoard(request.CallbackQuery.Message.Chat.ID, processShowListRequest())
+	case "participate":
+		return getParticipateKeyboard(request.CallbackQuery.Message.Chat.ID)
+	case "newList":
+		if err := processNewListRequest(request.CallbackQuery); err != nil {
+			return getStartMessageWithKeyBoard(request.CallbackQuery.Message.Chat.ID, err.Error())
+		} else {
+			return getStartMessageWithKeyBoard(request.CallbackQuery.Message.Chat.ID, "Создал")
+		}
+	default:
+		if err := processAddParticipantRequest(&request); err != nil {
+			return getStartMessageWithKeyBoard(request.CallbackQuery.Message.Chat.ID, err.Error())
+		} else {
+			return getStartMessageWithKeyBoard(request.CallbackQuery.Message.Chat.ID, "Записал ;)")
+		}
 	}
 }
 
 func getManageKeyBoard(chatId int64) tgbotapi.MessageConfig {
+
 	newListButton := tgbotapi.NewInlineKeyboardButtonData("Создать новый список", "newList")
 	//editListButton := tgbotapi.NewInlineKeyboardButtonData("Редактироовать существующий", "editList")
 	keyboardRow := tgbotapi.NewInlineKeyboardRow(newListButton)
@@ -105,6 +105,7 @@ func getStartMessageWithKeyBoard(chatId int64, responseText string) tgbotapi.Mes
 	partButton := tgbotapi.NewInlineKeyboardButtonData("Записаться", "participate")
 	listButton := tgbotapi.NewInlineKeyboardButtonData("Узнать расклад", "list")
 	keyboardRow1 := tgbotapi.NewInlineKeyboardRow(partButton, listButton)
+
 	manageButton := tgbotapi.NewInlineKeyboardButtonData("Управлять списками", "manage")
 	keyboardRow2 := tgbotapi.NewInlineKeyboardRow(manageButton)
 
@@ -114,6 +115,7 @@ func getStartMessageWithKeyBoard(chatId int64, responseText string) tgbotapi.Mes
 }
 
 func getParticipateKeyboard(chatId int64) tgbotapi.MessageConfig {
+
 	plus := tgbotapi.NewInlineKeyboardButtonData("Приду", "+")
 	minus := tgbotapi.NewInlineKeyboardButtonData("Не приду", "-")
 	injured := tgbotapi.NewInlineKeyboardButtonData("Травмирован", "!")
@@ -121,6 +123,7 @@ func getParticipateKeyboard(chatId int64) tgbotapi.MessageConfig {
 
 	msg := tgbotapi.NewMessage(chatId, "Укажите, сможете ли вы участвовать")
 	msg.ReplyMarkup = tgbotapi.NewInlineKeyboardMarkup(keyboardRow)
+
 	return msg
 }
 
@@ -155,6 +158,7 @@ func processShowListRequest() string {
 }
 
 func createMsgWithKeyboard(chatId int64, text string, keyboard tgbotapi.InlineKeyboardMarkup) tgbotapi.MessageConfig {
+
 	msg := tgbotapi.NewMessage(chatId, text)
 	msg.ReplyMarkup = keyboard
 	return msg
