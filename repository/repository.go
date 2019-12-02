@@ -3,11 +3,12 @@ package repository
 import (
 	"fmt"
 	"github.com/jinzhu/gorm"
+	"os"
 	"strings"
 )
 
 const dbDialect = "mysql"
-const dbPath = "b641d7e50b5242:0708f315@(us-cdbr-iron-east-05.cleardb.net)/heroku_07b6f05f1995915"
+var dbPath = os.Getenv("CLEARDB_DATABASE_URL")
 
 type GameParticipants struct {
 	ID      int `gorm:"primary_key"`

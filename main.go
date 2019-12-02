@@ -5,6 +5,7 @@ import (
 	"footballCounter/repository"
 	tgbotapi "github.com/Syfaro/telegram-bot-api"
 	_ "github.com/jinzhu/gorm/dialects/mysql"
+	"os"
 	"reflect"
 	"strings"
 )
@@ -15,22 +16,22 @@ const infoMsgText = "Справочная информация: данный б�
 
 func main() {
 	repository.InitialMigration()
-	//Вызываем бота
+	//Calling bot
 	telegramBot()
 }
 
-const botToken = "922019143:AAHgtoELxHIrYNZAv5HQOuz1tTjGQ-KI2jk"
+var botToken = os.Getenv("TBOT_TOKEN")
 
 func telegramBot() {
 
-	//Создаем бота
+	//Creating bot
 	bot, err := tgbotapi.NewBotAPI(botToken)
 	if err != nil {
 		panic(err)
 	}
 
 	fmt.Println("Connected to telegram.")
-	//Устанавливаем время обновления
+
 	updateConfig := tgbotapi.NewUpdate(0)
 	updateConfig.Timeout = 60
 
@@ -39,7 +40,6 @@ func telegramBot() {
 
 func processRequests(bot *tgbotapi.BotAPI, updateConfig tgbotapi.UpdateConfig) {
 
-	//Получаем обновления от бота
 	updatesChannel, err := bot.GetUpdatesChan(updateConfig)
 	if err != nil {
 		panic(err)
@@ -55,7 +55,7 @@ func processRequests(bot *tgbotapi.BotAPI, updateConfig tgbotapi.UpdateConfig) {
 			continue
 		}
 
-		//Проверяем что от пользователья пришло именно текстовое сообщение
+		//Check if we got text message
 		if reflect.TypeOf(update.Message.Text).Kind() == reflect.String && update.Message.Text != "" {
 			msg = getStartMessageWithKeyBoard(update.Message.Chat.ID, "Привет!")
 		} else {
